@@ -68,3 +68,34 @@ function logTrackingData(trackingId, req) {
     // Known email client prefetch patterns
     userAgent.includes("Thunderbird") ||
     userAgent.includes("Mail/");
+
+  // Track potential sender access
+  if (!senderAccessTimes.has(trackingId)) {
+    senderAccessTimes.set(trackingId, timestamp);
+
+    // If this looks like sender access, mark it and skip logging
+    if (isSenderAccess || isBot || !isRealBrowser) {
+      console.log(
+        `👤 Sender/Bot access detected for ${trackingId} - skipping event logging`
+      );
+      console.log(`   UserAgent: ${userAgent}`);
+      console.log(`   Referer: ${referer}`);
+      return;
+    }
+  }
+
+  const senderAccess = senderAccessTimes.get(trackingId);
+  const timeSinceSender = timestamp - senderAccess;
+
+  console.log(`🔍 DEBUG - timeSinceSender: ${timeSinceSender}ms`);
+
+  // Only log if this appears to be a genuine receiver open
+  const isLikelyReceiver =
+    isRealBrowser &&
+    !isSenderAccess &&
+    timeSinceSender > 5000 && // At least 5 seconds since first access
+    !isBot;
+
+  if (!receiverEvents.has(trackingId)) {
+    receiverEvents.set(trackingId, []);
+  }
