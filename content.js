@@ -491,3 +491,111 @@ function handleEmailSent(composeWindow, trackingId) {
     startDirectPolling(trackingId);
   });
 }
+
+function extractEmailData(composeWindow) {
+  let toField, subjectField;
+  
+  if (isGmail) {
+    const toSelectors = ['input[name="to"]', '[aria-label*="To"]', '.vR input', '.aoD input'];
+    const subjectSelectors = ['input[name="subjectbox"]', '[aria-label*="Subject"]'];
+    
+    for (let selector of toSelectors) {
+      toField = composeWindow.querySelector(selector);
+      if (toField && toField.value) break;
+    }
+    
+    for (let selector of subjectSelectors) {
+      subjectField = composeWindow.querySelector(selector);
+      if (subjectField && subjectField.value) break;
+    }
+  } else if (isYahoo) {
+    // Enhanced Yahoo Mail selectors
+    const toSelectors = [
+      '[data-test-id="to-field"]',
+      'input[placeholder*="To"]',
+      '[aria-label*="To"]',
+      'input[name="to"]'
+    ];
+    
+    const subjectSelectors = [
+      '[data-test-id="subject-field"]',
+      'input[placeholder*="Subject"]',
+      '[aria-label*="Subject"]',
+      'input[name="subject"]'
+    ];
+    
+    for (let selector of toSelectors) {
+      toField = composeWindow.querySelector(selector);
+      if (toField && toField.value) break;
+    }
+    
+    for (let selector of subjectSelectors) {
+      subjectField = composeWindow.querySelector(selector);
+      if (subjectField && subjectField.value) break;
+    }
+  }
+  
+  return {
+    to: extractToFromGmail(composeWindow),
+    subject: subjectField ? subjectField.value : 'No Subject'
+  };
+}
+function extractToFromGmail(composeWindow) {
+  const recipients = new Set();
+
+  // 1. Gmail chips — check both name (text) and email attributes
+  const chipSpans = composeWindow.querySelectorAll('.vN[role="presentation"], [data-hovercard-id]');
+  chipSpans.forEach(span => {
+    const name = span.textContent.trim();
+    const email = span.getAttribute('email') || span.getAttribute('data-hovercard-id');
+
+    if (name && email && email.includes('@')) {
+      // If both name and email are visible (but name ≠ email), prefer name
+      if (name !== email) {
+        recipients.add(name);
+      } else {
+        recipients.add(email);
+      }
+    } else if (name) {
+      recipients.add(name);
+    }
+  });
+
+  // 2. Fallback: raw email in input field
+  if (recipients.size === 0) {
+    const toInputs = composeWindow.querySelectorAll('textarea[name="to"], input[name="to"]');
+    toInputs.forEach(input => {
+      const value = input.value.trim();
+      if (value) recipients.add(value);
+    });
+  }
+
+  // 3. Fallback: if nothing found, use your own Gmail (for self-send)
+  if (recipients.size === 0) {
+    const profileEmailNode = document.querySelector('a[href^="https://myaccount.google.com"]');
+    if (profileEmailNode && profileEmailNode.textContent.includes('@')) {
+      recipients.add(profileEmailNode.textContent.trim());
+    }
+  }
+
+  return recipients.size > 0 ? Array.from(recipients).join(', ') : 'Unknown';
+}
+
+
+
+function testPixelURL(trackingId) {
+  const testUrl = `${TRACKING_SERVER}/track/${trackingId}`;
+  console.log('🧪 Testing pixel URL accessibility:', testUrl);
+  
+  fetch(testUrl, {
+    headers: {
+      'ngrok-skip-browser-warning': 'true'
+    }
+  })
+    .then(response => {
+      console.log('✅ Pixel URL is accessible, status:', response.status);
+    })
+    .catch(error => {
+      console.error('❌ Pixel URL test failed:', error);
+    });
+}
