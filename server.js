@@ -99,3 +99,47 @@ function logTrackingData(trackingId, req) {
   if (!receiverEvents.has(trackingId)) {
     receiverEvents.set(trackingId, []);
   }
+
+  const alreadyLogged = receiverEvents.get(trackingId).length > 0;
+
+  if (!alreadyLogged && isLikelyReceiver) {
+    receiverEvents.get(trackingId).push({
+      timestamp,
+      userAgent,
+      ip,
+      referer,
+      type: "receiver_open",
+      timeSinceSender,
+      confidence: calculateConfidence(userAgent, referer, timeSinceSender),
+      isGoogleProxy:
+        userAgent.includes("GoogleImageProxy") ||
+        userAgent.includes("ggpht.com"),
+    });
+
+    console.log(`✅ RECEIVER OPEN recorded for ${trackingId}`);
+    console.log(`   Delay since sender: ${timeSinceSender}ms`);
+    console.log(`   UserAgent: ${userAgent}`);
+    console.log(`   Referer: ${referer}`);
+    console.log(
+      `   Google Proxy: ${
+        userAgent.includes("GoogleImageProxy") ||
+        userAgent.includes("ggpht.com")
+      }`
+    );
+  } else {
+    const reason = !isRealBrowser
+      ? "not real browser"
+      : isSenderAccess
+      ? "sender access pattern"
+      : timeSinceSender <= 5000
+      ? "too soon after sender"
+      : alreadyLogged
+      ? "already logged"
+      : "unknown";
+
+    console.log(`ℹ️ Access skipped for ${trackingId} - Reason: ${reason}`);
+    console.log(
+      `   timeSinceSender: ${timeSinceSender}ms, isRealBrowser: ${isRealBrowser}`
+    );
+  }
+}
