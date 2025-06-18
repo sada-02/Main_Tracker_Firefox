@@ -59,3 +59,56 @@ function checkForCompose() {
       }
     }
   }
+  
+  if (composeWindows.length === 0) return;
+  
+  composeWindows.forEach(window => {
+    if (isComposeWindow(window) && !window.dataset.trackerAdded) {
+      console.log('Found compose window, adding tracker');
+      addTrackingButton(window);
+      window.dataset.trackerAdded = 'true';
+    }
+  });
+}
+
+function isComposeWindow(window) {
+  if (isGmail) {
+    return window.querySelector('input[name="to"]') || 
+           window.querySelector('[aria-label*="To"]') ||
+           window.querySelector('[data-tooltip="Send"]');
+  } else if (isYahoo) {
+    // Enhanced Yahoo Mail detection
+    const indicators = [
+      () => window.querySelector('[data-test-id="to-field"]'),
+      () => window.querySelector('input[placeholder*="To"]'),
+      () => window.querySelector('[data-test-id="compose-send-button"]'),
+      () => window.querySelector('button[aria-label*="Send"]'),
+      () => window.querySelector('[aria-label*="To"]'),
+      () => window.querySelector('[aria-label*="Subject"]'),
+      () => window.querySelector('input[name="to"]'),
+      () => window.querySelector('input[name="subject"]'),
+      () => window.querySelector('.btn-send'),
+      () => window.querySelector('[data-test-id="rte"]')
+    ];
+    
+    return indicators.some(check => {
+      try {
+        return check();
+      } catch (e) {
+        return false;
+      }
+    });
+  }
+  return false;
+}
+
+function addTrackingButton(composeWindow) {
+  console.log('🔧 Adding tracking button to compose window...');
+  
+  const sendButton = findSendButton(composeWindow);
+  
+  if (!sendButton) {
+    console.log('❌ Could not find send button, trying alternative placement');
+    tryAlternativeButtonPlacement(composeWindow);
+    return;
+  }
