@@ -112,3 +112,51 @@ function addTrackingButton(composeWindow) {
     tryAlternativeButtonPlacement(composeWindow);
     return;
   }
+  
+  console.log('✅ Found send button:', sendButton);
+  
+  const trackButton = document.createElement('button');
+  trackButton.textContent = '📊 Track';
+  trackButton.type = 'button'; // Prevent form submission
+  trackButton.style.cssText = `
+    margin-left: 10px;
+    padding: 8px 12px;
+    background: #1a73e8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    z-index: 9999;
+    position: relative;
+  `;
+  
+  let isTracking = false;
+  let trackingId = null;
+  
+  trackButton.onclick = function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    isTracking = !isTracking;
+    
+    if (isTracking) {
+      trackButton.textContent = '✅ Tracking';
+      trackButton.style.background = '#34a853';
+      composeWindow.dataset.tracking = 'true';
+      
+      trackingId = 'track_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+      composeWindow.dataset.trackingId = trackingId;
+      
+      console.log('🎯 Tracking enabled, injecting pixel now...');
+      injectTrackingPixel(composeWindow, trackingId);
+      
+      setupSendTracking(composeWindow);
+    } else {
+      trackButton.textContent = '📊 Track';
+      trackButton.style.background = '#1a73e8';
+      composeWindow.dataset.tracking = 'false';
+      
+      removeTrackingContent(composeWindow);
+    }
+  };
