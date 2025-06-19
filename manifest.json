@@ -1,21 +1,37 @@
 {
-  "manifest_version": 3,
-  "name": "Gmail Pixel Tracker",
-  "version": "1.0",
-  "description": "Injects a tracking pixel into sent Gmail emails to log reads.",
-  "permissions": ["scripting", "activeTab"],
-  "host_permissions": [
+  "manifest_version": 2,
+  "name": "Simple Mail Tracker - Background Network",
+  "version": "1.0.0",
+  "description": "Simple email tracking with background network requests",
+  
+  "permissions": [
     "https://mail.google.com/*",
-    "http://localhost:3000/*"
+    "https://mail.yahoo.com/*",
+    "https://*.yahoo.com/*",
+    "YOUR_TRACKING_SERVER_URL_HERE/*",
+    "storage",
+    "notifications"
   ],
-  "background": {
-    "service_worker": "background.js"
-  },
+  
   "content_scripts": [
     {
-      "matches": ["https://mail.google.com/*"],
-      "js": ["content.js"]
+      "matches": [
+        "https://mail.google.com/*",
+        "https://mail.yahoo.com/*",
+        "https://*.yahoo.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_end"
     }
   ],
-  "action": { "default_title": "Gmail Pixel Tracker" }
+  
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": true
+  },
+  
+  "browser_action": {
+    "default_popup": "popup.html",
+    "default_title": "Mail Tracker"
+  }
 }
