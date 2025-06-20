@@ -160,3 +160,44 @@ function addTrackingButton(composeWindow) {
       removeTrackingContent(composeWindow);
     }
   };
+  
+  // Try multiple insertion methods
+  try {
+    if (sendButton.parentElement) {
+      sendButton.parentElement.insertBefore(trackButton, sendButton.nextSibling);
+    } else {
+      sendButton.insertAdjacentElement('afterend', trackButton);
+    }
+    console.log('✅ Tracking button added successfully');
+  } catch (error) {
+    console.log('❌ Error inserting button:', error);
+    tryAlternativeButtonPlacement(composeWindow, trackButton);
+  }
+}
+
+function tryAlternativeButtonPlacement(composeWindow, trackButton = null) {
+  console.log('🔄 Trying alternative button placement...');
+  
+  if (!trackButton) {
+    trackButton = document.createElement('button');
+    trackButton.textContent = '📊 Track';
+    trackButton.type = 'button';
+    trackButton.style.cssText = `
+      margin: 10px;
+      padding: 8px 12px;
+      background: #1a73e8;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 99999;
+    `;
+    
+    // Add the same click handler
+    let isTracking = false;
+    let trackingId = null;
+    
