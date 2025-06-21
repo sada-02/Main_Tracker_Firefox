@@ -201,3 +201,113 @@ function tryAlternativeButtonPlacement(composeWindow, trackButton = null) {
     let isTracking = false;
     let trackingId = null;
     
+    trackButton.onclick = function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      isTracking = !isTracking;
+      
+      if (isTracking) {
+        trackButton.textContent = '✅ Tracking';
+        trackButton.style.background = '#34a853';
+        composeWindow.dataset.tracking = 'true';
+        
+        trackingId = 'track_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+        composeWindow.dataset.trackingId = trackingId;
+        
+        console.log('🎯 Tracking enabled (alternative), injecting pixel now...');
+        injectTrackingPixel(composeWindow, trackingId);
+        
+        setupSendTracking(composeWindow);
+      } else {
+        trackButton.textContent = '📊 Track';
+        trackButton.style.background = '#1a73e8';
+        composeWindow.dataset.tracking = 'false';
+        
+        removeTrackingContent(composeWindow);
+      }
+    };
+  }
+  
+  // Try to place button in various locations
+  const placements = [
+    () => composeWindow.appendChild(trackButton),
+    () => composeWindow.prepend(trackButton),
+    () => document.body.appendChild(trackButton)
+  ];
+  
+  for (let placement of placements) {
+    try {
+      placement();
+      console.log('✅ Alternative button placement successful');
+      return;
+    } catch (error) {
+      continue;
+    }
+  }
+  
+  console.log('❌ All button placement methods failed');
+}
+
+function findSendButton(composeWindow) {
+  if (isGmail) {
+    return composeWindow.querySelector('[data-tooltip="Send"]') ||
+           composeWindow.querySelector('[aria-label*="Send"]');
+  } else if (isYahoo) {
+    // Enhanced Yahoo Mail send button detection
+    const selectors = [
+      '[data-test-id="compose-send-button"]',
+      'button[aria-label*="Send"]',
+      'button[title*="Send"]',
+      '.btn-send',
+      '[data-action="send"]',
+      'button[type="submit"]',
+      '.compose-send-button',
+      'button.primary'
+    ];
+    
+    for (let selector of selectors) {
+      const button = composeWindow.querySelector(selector);
+      if (button) {
+        console.log(`Found Yahoo send button with selector: ${selector}`);
+        return button;
+      }
+    }
+    
+    // Fallback: look for any button containing "Send" text
+    const buttons = composeWindow.querySelectorAll('button');
+    for (let button of buttons) {
+      if (button.textContent?.toLowerCase().includes('send')) {
+        console.log('Found Yahoo send button by text content');
+        return button;
+      }
+    }
+  }
+  return null;
+}
+
+function findEmailBody(composeWindow) {
+  if (isGmail) {
+    return composeWindow.querySelector('[contenteditable="true"]');
+  } else if (isYahoo) {
+    // Enhanced Yahoo Mail email body detection
+    const selectors = [
+      '[data-test-id="rte"]',
+      '[contenteditable="true"]',
+      '.rte-content',
+      '[role="textbox"]',
+      '.compose-body',
+      'textarea[name="body"]',
+      '.message-body',
+      '.compose-message'
+    ];
+    
+    for (let selector of selectors) {
+      const body = composeWindow.querySelector(selector);
+      if (body) {
+        console.log(`Found Yahoo email body with selector: ${selector}`);
+        return body;
+      }
+    }
+  }
+  return null;
+}
