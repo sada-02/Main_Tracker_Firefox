@@ -143,3 +143,51 @@ function logTrackingData(trackingId, req) {
     );
   }
 }
+
+// Helper function to calculate confidence score
+function calculateConfidence(userAgent, referer, timeSinceSender) {
+  let confidence = 0;
+
+  // Google Image Proxy is highly reliable
+  if (
+    userAgent.includes("GoogleImageProxy") ||
+    userAgent.includes("ggpht.com")
+  ) {
+    confidence += 40;
+  }
+
+  // Real browser increases confidence
+  if (
+    userAgent.includes("Chrome") ||
+    userAgent.includes("Firefox") ||
+    userAgent.includes("Safari")
+  ) {
+    confidence += 30;
+  }
+
+  // Gmail inbox/email view increases confidence
+  if (
+    referer.includes("mail.google.com") &&
+    !referer.includes("compose") &&
+    !referer.includes("sent")
+  ) {
+    confidence += 25;
+  }
+
+  // Time delay increases confidence
+  if (timeSinceSender > 300000) confidence += 25; // 5+ minutes
+  else if (timeSinceSender > 60000) confidence += 20; // 1+ minute
+  else if (timeSinceSender > 30000) confidence += 15; // 30+ seconds
+  else if (timeSinceSender > 5000) confidence += 10; // 5+ seconds
+
+  // Mobile user agents (often receivers)
+  if (
+    userAgent.includes("Mobile") ||
+    userAgent.includes("iPhone") ||
+    userAgent.includes("Android")
+  ) {
+    confidence += 10;
+  }
+
+  return Math.min(confidence, 100);
+}
