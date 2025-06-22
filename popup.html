@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+    width: 450px;
+    min-height: 350px;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin: 0;
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  }
+
+  .header {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 20px;
+    text-align: center;
+    border-bottom: 3px solid #4e54c8;
+  }
+
+  .header h2 {
+    margin: 0;
+    color: #2e2e2e;
+    font-size: 24px;
+    font-weight: 600;
+  }
+
+  .header .subtitle {
+    color: #555555;
+    font-size: 14px;
+    margin-top: 5px;
+  }
+
+  .stats-container {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 15px;
+    margin: 0;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin-bottom: 0;
+  }
+
+  .stat {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.25);
+    padding: 15px 10px;
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+  }
+
+  .stat-number {
+    font-size: 28px;
+    font-weight: bold;
+    color: #2e2e2e;
+    margin-bottom: 5px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: #444444;
+    font-weight: 500;
+  }
+
+  .content {
+    background: #ffffff;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  .filter-tabs {
+    display: flex;
+    background: #f0f0f0;
+    border-bottom: 1px solid #cccccc;
+    padding: 0;
+  }
+
+  .filter-tab {
+    flex: 1;
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    font-weight: 500;
+    color: #2e2e2e;
+    transition: all 0.2s;
+  }
+
+  .filter-tab.active {
+    background: #4e54c8;
+    color: #ffffff;
+    border-bottom: 2px solid #8f94fb;
+  }
+
+  .filter-tab:hover {
+    background: rgba(78, 84, 200, 0.1);
+  }
+
+  .email-list {
+    padding: 15px;
+  }
+
+  .tracking-item {
+    border: 1px solid #e0e0e0;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tracking-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  }
+
+  .tracking-item.opened {
+    background: linear-gradient(135deg, #dcedc2 0%, #c5e1a5 100%);
+    border-color: #aed581;
+  }
+
+  .tracking-item.sent {
+    background: linear-gradient(135deg, #fff9c4 0%, #ffecb3 100%);
+    border-color: #ffe082;
+  }
+
+  .email-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+
+  .email-to {
+    font-weight: 600;
+    color: #2e2e2e;
+    font-size: 14px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .platform-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .platform-gmail {
+    background: #d14836;
+    color: white;
+  }
+
+  .platform-yahoo {
+    background: #6001d2;
+    color: white;
+  }
+
+  .email-subject {
+    color: #424242;
+    font-size: 13px;
+    margin: 8px 0;
+    font-style: italic;
+  }
+
+  .email-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+    font-size: 11px;
+  }
+
+  .detail-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .status-opened {
+    background: #4caf50;
+    color: white;
+  }
+
+  .status-sent {
+    background: #ff9800;
+    color: white;
+  }
+
+  .timestamp {
+    color: #616161;
+  }
+
+  .no-data {
+    text-align: center;
+    padding: 60px 20px;
+    color: #424242;
+  }
+
+  .no-data-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+  }
+
+  .actions {
+    padding: 15px;
+    background: #e0e0e0;
+    border-top: 1px solid #bdbdbd;
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: #37474f;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: #263238;
+  }
+
+  .btn-secondary {
+    background: #cfd8dc;
+    color: #37474f;
+  }
+
+  .btn-secondary:hover {
+    background: #b0bec5;
+    color: #263238;
+  }
+
+  .tracking-id {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    color: #616161;
+    margin-top: 5px;
+  }
+
+  /* Scrollbar styling */
+  .content::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .content::-webkit-scrollbar-track {
+    background: #eceff1;
+  }
+
+  .content::-webkit-scrollbar-thumb {
+    background: #b0bec5;
+    border-radius: 3px;
+  }
+
+  .content::-webkit-scrollbar-thumb:hover {
+    background: #90a4ae;
+  }
+
+
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>Mail Tracker</h2>
+    <div class="subtitle">Track email across Gmail & Yahoo</div>
+  </div>
+  
+  <div class="stats-container">
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-number" id="total-emails">0</div>
+        <div class="stat-label">Total</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number" id="open-rate">0%</div>
+        <div class="stat-label">Open Rate</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number" id="opened-emails">0</div>
+        <div class="stat-label">Opened</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number" id="today-count">0</div>
+        <div class="stat-label">Today</div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="content">
+    <div class="filter-tabs">
+      <button class="filter-tab active" data-filter="all">All Emails</button>
+      <button class="filter-tab" data-filter="opened">Opened</button>
+      <button class="filter-tab" data-filter="sent">Pending</button>
+      <button class="filter-tab" data-filter="today">Today</button>
+    </div>
+    
+    <div class="email-list" id="emailList">
+      <!-- Email items will be populated here -->
+    </div>
+  </div>
+  
+  <div class="actions">
+    <button class="btn btn-primary" id="refresh-btn">Refresh</button>
+    <button class="btn btn-secondary" id="clear-btn">Clear All</button>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
