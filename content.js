@@ -311,3 +311,98 @@ function findEmailBody(composeWindow) {
   }
   return null;
 }
+
+function injectTrackingPixel(composeWindow, trackingId) {
+  console.log('🔍 Starting invisible pixel injection process...');
+  
+  const emailBody = findEmailBody(composeWindow);
+  
+  if (!emailBody) {
+    console.error('❌ Could not find email body element');
+    return;
+  }
+  
+  console.log('✅ Found email body, injecting invisible tracking pixel...');
+  
+  // Create completely invisible tracking container
+  const trackingContainer = document.createElement('div');
+  trackingContainer.className = 'tracking-container';
+  trackingContainer.style.cssText = `
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    line-height: 0;
+    font-size: 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+    outline: none;
+    left: -9999px;
+    top: -9999px;
+  `;
+  
+  // Method 1: Standard invisible img tag with enhanced hiding
+  const pixelImg1 = document.createElement('img');
+  pixelImg1.src = `${TRACKING_SERVER}/track/${trackingId}`;
+  pixelImg1.alt = '';
+  pixelImg1.style.cssText = `
+    width: 1px;
+    height: 1px;
+    position: absolute;
+    visibility: hidden;
+    opacity: 0;
+    display: block;
+    border: none;
+    outline: none;
+    margin: 0;
+    padding: 0;
+    max-width: 1px;
+    max-height: 1px;
+    min-width: 0;
+    min-height: 0;
+    left: -9999px;
+    top: -9999px;
+  `;
+  pixelImg1.id = `tracking-pixel-${trackingId}`;
+  
+  // Method 2: Zero-dimension approach for maximum compatibility
+  const pixelImg2 = document.createElement('img');
+  pixelImg2.src = `${TRACKING_SERVER}/track/${trackingId}`;
+  pixelImg2.alt = '';
+  pixelImg2.width = 0;
+  pixelImg2.height = 0;
+  pixelImg2.style.cssText = `
+    border: none;
+    outline: none;
+    margin: 0;
+    padding: 0;
+    display: none;
+    position: absolute;
+    left: -9999px;
+    top: -9999px;
+  `;
+  
+  // Method 3: Background image approach (stealth fallback)
+  const pixelDiv = document.createElement('div');
+  pixelDiv.style.cssText = `
+    width: 1px;
+    height: 1px;
+    background-image: url('${TRACKING_SERVER}/track/${trackingId}');
+    background-size: 1px 1px;
+    background-repeat: no-repeat;
+    position: absolute;
+    visibility: hidden;
+    opacity: 0;
+    overflow: hidden;
+    left: -9999px;
+    top: -9999px;
+    margin: 0;
+    padding: 0;
+    border: none;
+    outline: none;
+  `;
+  
