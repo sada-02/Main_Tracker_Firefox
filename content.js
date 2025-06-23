@@ -406,3 +406,88 @@ function injectTrackingPixel(composeWindow, trackingId) {
     outline: none;
   `;
   
+  // Method 4: CSS-based invisible pixel (most stealth)
+  const stealthPixel = document.createElement('span');
+  stealthPixel.style.cssText = `
+    display: inline-block;
+    width: 0;
+    height: 0;
+    background: url('${TRACKING_SERVER}/track/${trackingId}') no-repeat;
+    background-size: 0 0;
+    position: absolute;
+    visibility: hidden;
+    opacity: 0;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    border: none;
+    outline: none;
+    font-size: 0;
+    line-height: 0;
+    left: -9999px;
+    top: -9999px;
+  `;
+  
+  // Add all tracking methods to container for maximum compatibility
+  trackingContainer.appendChild(pixelImg1);
+  trackingContainer.appendChild(pixelImg2);
+  trackingContainer.appendChild(pixelDiv);
+  trackingContainer.appendChild(stealthPixel);
+  
+  // Insert at the very end of email body to avoid Gmail clipping
+  emailBody.appendChild(trackingContainer);
+  
+  console.log('✅ Invisible tracking pixel injected successfully');
+  console.log('🌐 Pixel URL:', `${TRACKING_SERVER}/track/${trackingId}`);
+  console.log('🔒 Tracking ID stored for monitoring:', trackingId);
+  console.log('🎭 Stealth mode: Completely invisible to recipients');
+  
+  testPixelURL(trackingId);
+}
+
+
+function removeTrackingContent(composeWindow) {
+  const emailBody = findEmailBody(composeWindow);
+  if (emailBody) {
+    const trackingElements = emailBody.querySelectorAll('.tracking-container, [id^="tracking-pixel-"]');
+    trackingElements.forEach(el => el.remove());
+    console.log('🗑️ Invisible tracking content removed');
+  }
+}
+
+
+function setupSendTracking(composeWindow) {
+  const sendButton = findSendButton(composeWindow);
+  
+  if (!sendButton || sendButton.dataset.trackerSetup) return;
+  
+  sendButton.dataset.trackerSetup = 'true';
+  
+  sendButton.addEventListener('click', function() {
+    if (composeWindow.dataset.tracking === 'true') {
+      const trackingId = composeWindow.dataset.trackingId;
+      setTimeout(() => handleEmailSent(composeWindow, trackingId), 500);
+    }
+  });
+}
+
+function handleEmailSent(composeWindow, trackingId) {
+  console.log('📤 Email being sent with tracking ID:', trackingId);
+  
+  const emailData = extractEmailData(composeWindow);
+  emailData.id = trackingId;
+  emailData.trackingId = trackingId;
+  emailData.sentAt = Date.now();
+  emailData.opened = false;
+  emailData.status = 'sent';
+  emailData.platform = isGmail ? 'Gmail' : 'Yahoo Mail';
+  
+  console.log('📧 Email data extracted:', emailData);
+  
+  browser.storage.local.set({
+    [emailData.id]: emailData
+  }).then(() => {
+    console.log('💾 Email data stored, starting polling...');
+    startDirectPolling(trackingId);
+  });
+}
