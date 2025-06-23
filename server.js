@@ -191,3 +191,42 @@ function calculateConfidence(userAgent, referer, timeSinceSender) {
 
   return Math.min(confidence, 100);
 }
+
+// Serve tracking pixel (unchanged)
+app.get("/track/:trackingId", (req, res) => {
+  const { trackingId } = req.params;
+
+  logTrackingData(trackingId, req);
+
+  const pixel = Buffer.from([
+    0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x01, 0x00, 0x01, 0x00, 0x80, 0x00,
+    0x00, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x21, 0xf9, 0x04, 0x01, 0x00,
+    0x00, 0x00, 0x00, 0x2c, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00,
+    0x00, 0x02, 0x02, 0x04, 0x01, 0x00, 0x3b,
+  ]);
+
+  res.set({
+    "Content-Type": "image/gif",
+    "Content-Length": pixel.length,
+    "Access-Control-Allow-Origin": "*",
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    Pragma: "no-cache",
+    Expires: "0",
+  });
+
+  res.send(pixel);
+});
+
+// Updated API to get tracking status - now only returns receiver events
+app.get("/api/tracking/:trackingId", (req, res) => {
+  res.set({
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+  });
+
+  const { trackingId } = req.params;
+  const events = receiverEvents.get(trackingId) || [];
+
+  console.log(`📊 API request for tracking ID: ${trackingId}`);
+  console.log(`📊 Found ${events.length} receiver events`);
