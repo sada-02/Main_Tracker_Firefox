@@ -230,3 +230,46 @@ app.get("/api/tracking/:trackingId", (req, res) => {
 
   console.log(`📊 API request for tracking ID: ${trackingId}`);
   console.log(`📊 Found ${events.length} receiver events`);
+
+  const data = {
+    trackingId,
+    opened: events.length > 0,
+    openCount: events.length,
+    events,
+    receiverOnly: true, // Flag to indicate this only tracks receiver opens
+  };
+
+  res.set({
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*",
+  });
+
+  res.json(data);
+});
+
+// Health check endpoint (unchanged)
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", timestamp: Date.now() });
+});
+
+app.options("/api/tracking/:trackingId", (req, res) => {
+  res.set({
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+  });
+  res.sendStatus(200);
+});
+
+app.use((err, req, res, next) => {
+  console.error("❌ Server error:", err);
+  res.status(500).json({ error: "Internal server error" });
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Tracking server running on http://localhost:${PORT}`);
+  console.log(`📊 Track endpoint: http://localhost:${PORT}/track/{trackingId}`);
+  console.log(
+    `🎯 Enhanced sender/receiver detection with Google Image Proxy support enabled`
+  );
+});
