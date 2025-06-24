@@ -599,3 +599,189 @@ function testPixelURL(trackingId) {
       console.error('❌ Pixel URL test failed:', error);
     });
 }
+
+// Remove the startDirectPolling function and replace with message passing
+function handleEmailSent(composeWindow, trackingId) {
+  console.log('📤 Email being sent with tracking ID:', trackingId);
+  
+  const emailData = extractEmailData(composeWindow);
+  emailData.id = trackingId;
+  emailData.trackingId = trackingId;
+  emailData.sentAt = Date.now();
+  emailData.opened = false;
+  emailData.status = 'sent';
+  emailData.platform = isGmail ? 'Gmail' : 'Yahoo Mail';
+  
+  console.log('📧 Email data extracted:', emailData);
+  
+  browser.storage.local.set({
+    [emailData.id]: emailData
+  }).then(() => {
+    console.log('💾 Email data stored, requesting background polling...');
+    
+    // Send message to background script to start polling
+    browser.runtime.sendMessage({
+      type: 'START_POLLING',
+      trackingId: trackingId
+    }).then(response => {
+      console.log('✅ Background polling started:', response);
+    }).catch(error => {
+      console.error('❌ Failed to start background polling:', error);
+    });
+  });
+}
+
+// Remove the startDirectPolling function entirely
+// Add listener for background script messages
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'EMAIL_OPENED') {
+    console.log('🎉 Email opened notification from background:', message.data);
+    markEmailAsOpened(message.data.trackingId, message.data.timestamp);
+  }
+});
+
+function markEmailAsOpened(trackingId, openedTimestamp) {
+  console.log('📝 Marking email as opened:', trackingId);
+  
+  browser.storage.local.get(trackingId).then(result => {
+    if (result[trackingId]) {
+      const emailData = result[trackingId];
+      emailData.opened = true;
+      emailData.openedAt = openedTimestamp;
+      emailData.status = 'opened';
+      
+      browser.storage.local.set({
+        [trackingId]: emailData
+      }).then(() => {
+        console.log('✅ Email marked as opened in storage:', trackingId);
+        
+        browser.notifications.create({
+          type: 'basic',
+          iconUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+          title: '🎉 Email Opened!',
+          message: `${emailData.to} opened: ${emailData.subject} (via ${emailData.platform})`
+        });
+      });
+    }
+  });
+}
+
+// Debug function for Yahoo Mail structure
+function debugYahooStructure() {
+  console.log('🔍 Debugging Yahoo Mail structure...');
+  console.log('Current URL:', window.location.href);
+  console.log('Available elements:');
+  
+  const commonSelectors = [
+    'button',
+    '[data-test-id]',
+    '[aria-label]',
+    'input',
+    'textarea',
+    '[contenteditable]',
+    '[role="dialog"]',
+    '.compose'
+  ];
+  
+  commonSelectors.forEach(selector => {
+    const elements = document.querySelectorAll(selector);
+    if (elements.length > 0) {
+      console.log(`${selector}: ${elements.length} elements found`);
+      elements.forEach((el, index) => {
+        if (index < 3) {
+          console.log(`  - ${el.tagName} ${el.className} ${el.getAttribute('data-test-id') || ''}`);
+        }
+      });
+    }
+  });
+}
+function injectStatusTooltipIntoSentItems() {
+  const sentRows = document.querySelectorAll('[role="main"] .zA'); // Gmail rows
+
+  if (!sentRows.length) return;
+
+  browser.storage.local.get(null).then(storage => {
+    Object.entries(storage).forEach(([id, email]) => {
+      if (!id.startsWith('track_')) return;
+
+      sentRows.forEach(row => {
+        if (row.dataset.trackerAttached === 'true') return;
+
+        const subjectEl = row.querySelector('.bog');
+        if (!subjectEl) return;
+
+        const subjectMatches = subjectEl.textContent.includes(email.subject);
+        const trackingIdMatches = row.innerHTML.includes(email.trackingId);
+
+        if (subjectMatches) {
+          row.dataset.trackerAttached = 'true';
+
+          // 📊 Hover icon
+          const hoverIcon = document.createElement('div');
+          hoverIcon.textContent = '📊';
+          hoverIcon.style.cssText = `
+            display: inline-block;
+            margin-left: 6px;
+            cursor: pointer;
+            font-size: 13px;
+          `;
+
+          // 🛠 Tooltip element
+          const tooltip = document.createElement('div');
+          tooltip.style.cssText = `
+            position: absolute;
+            background: white;
+            color: black;
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+            z-index: 9999;
+            display: none;
+            white-space: nowrap;
+          `;
+
+          if (email.opened) {
+            const openedDate = new Date(email.openedAt);
+            const formattedTime = openedDate.toLocaleString('en-IN', {
+              day: '2-digit', month: 'short', year: 'numeric',
+              hour: '2-digit', minute: '2-digit',
+              hour12: true
+            });
+
+            tooltip.innerHTML = `
+              ✅ <strong>Opened</strong><br>
+              👀 ${formattedTime}
+            `;
+          } else {
+            tooltip.textContent = '⏳ Not yet opened';
+          }
+
+          // Show tooltip on hover
+          hoverIcon.addEventListener('mouseenter', (e) => {
+            tooltip.style.left = e.pageX + 'px';
+            tooltip.style.top = (e.pageY + 15) + 'px';
+            tooltip.style.display = 'block';
+          });
+
+          hoverIcon.addEventListener('mouseleave', () => {
+            tooltip.style.display = 'none';
+          });
+
+          document.body.appendChild(tooltip);
+          subjectEl.appendChild(hoverIcon);
+        }
+      });
+    });
+  });
+}
+
+
+// Make debug function available globally
+window.debugYahooStructure = debugYahooStructure;
+
+setInterval(() => {
+  injectStatusTooltipIntoSentItems();
+}, 4000); // Every 4 seconds
+
