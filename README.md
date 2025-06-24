@@ -75,3 +75,5 @@ node server.js
 ## 💡 Developer Notes
 
 This extension uses the [WebExtensions API](https://developer.mozilla.org/docs/Mozilla/Add-ons/WebExtensions). Ensure your tracking server is running and accessible by the extension. For production environments, update the `TRACKING_SERVER` constant accordingly and review `manifest.json` for any required permission adjustments.
+
+---
